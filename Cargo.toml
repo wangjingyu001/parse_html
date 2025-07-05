@@ -5,7 +5,7 @@ edition = "2024"
 authors = ["18834169694@163.com"]
 description = "A package for parse some data from html.scripts"
 license = "MIT OR Apache-2.0"  # 常见的双许可方式
-categories = ["Data structures"]
+categories = ["data-processing"]
 
 [lib]
 path = "src/lib.rs"

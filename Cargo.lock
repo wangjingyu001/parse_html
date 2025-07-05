@@ -442,6 +442,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "html-json-extract"
+version = "0.1.0"
+dependencies = [
+ "boa_engine",
+ "regex",
+ "scraper",
+ "serde_json",
+ "serde_merge",
+]
+
+[[package]]
 name = "html5ever"
 version = "0.26.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -791,17 +802,6 @@ dependencies = [
  "redox_syscall",
  "smallvec",
  "windows-targets",
-]
-
-[[package]]
-name = "parse_html"
-version = "0.1.0"
-dependencies = [
- "boa_engine",
- "regex",
- "scraper",
- "serde_json",
- "serde_merge",
 ]
 
 [[package]]

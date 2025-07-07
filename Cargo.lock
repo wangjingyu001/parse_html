@@ -449,7 +449,7 @@ dependencies = [
 
 [[package]]
 name = "html-json-extract"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "anyhow",
  "boa_engine",

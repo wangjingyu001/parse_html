@@ -1,6 +1,6 @@
 [package]
 name = "html-json-extract"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2024"
 authors = ["18834169694@163.com"]
 description = "A package for parse some data from html.scripts"

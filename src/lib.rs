@@ -115,6 +115,7 @@ pub fn run(html_str: &String) -> Result<Map<String, serde_json::Value>> {
             };
 
             for (index, script_text) in script_list.iter().enumerate() {
+                let now = std::time::Instant::now();
                 println!("执行第 {} 个 script", index);
 
                 if let Ok(parsed_data) = serde_json::from_str::<Value>(script_text) {
@@ -127,10 +128,11 @@ pub fn run(html_str: &String) -> Result<Map<String, serde_json::Value>> {
                 }
 
                 match context.eval(Source::from_bytes(script_text)) {
-                    Ok(_) => println!("✅ JS执行完成 index {}", index),
+                    Ok(_) => println!("✅ JS执行完成 index {} eval耗时: {:?}", index,now.elapsed()),
                     Err(e) => {
-                        eprintln!("❌ JS执行出错 index {}: {:?}", index, e);
+                        eprintln!("❌ JS执行出错 index {}: {:?} eval耗时: {:?}", index, e, now.elapsed());
                         let json_list = extract_all_json(script_text);
+                        // println!("json_list {:?}", json_list);
                         for json_part in json_list {
                             deep_merge(&mut result, json_part);
                         }
@@ -139,28 +141,67 @@ pub fn run(html_str: &String) -> Result<Map<String, serde_json::Value>> {
             }
 
             match context.eval(Source::from_bytes(r#"
-                var result = Object.entries(window).reduce((acc, [key, val]) => {
-                    const valType = typeof val;
-                    if (valType === 'function' || valType === 'undefined') return acc;
-                    try {
-                        if (val && (valType === 'object' || Array.isArray(val))) {
-                            try { JSON.stringify(val); acc[key] = val; } catch(e){}
-                        } else if (valType === 'string') {
-                            try { acc[key] = JSON.parse(val); }
-                            catch(e){ if (val) acc.assignment_data[key] = val; }
-                        } else if (valType === 'number') {
-                            acc.assignment_data[key] = val;
-                        }
-                    } catch(e) {}
-                    return acc;
-                }, {assignment_data:{}})
-                JSON.stringify(result)
+                function safeExtract(obj, visited = new WeakSet(), depth = 0, maxDepth = 3, maxPropsPerObject = 5000000) {
+    if (obj === null || typeof obj !== 'object') return obj;
+    if (visited.has(obj)) return;
+    if (depth > maxDepth) return;
+
+    visited.add(obj);
+    const result = {};
+    let count = 0;
+
+    const props = Object.keys(obj);  
+    for (const key of props) {
+        if (count >= maxPropsPerObject) {
+            result['__truncated__'] = `Only first ${maxPropsPerObject} props extracted.`;
+            break;
+        }
+
+        try {
+            const value = obj[key];
+            const type = typeof value;
+
+            if (
+                type === 'function' ||
+                type === 'symbol' ||
+                type === 'undefined' ||
+                value === window
+            ) {
+                continue;
+            }
+
+            if (type === 'object') {
+                const extracted = safeExtract(value, visited, depth + 1, maxDepth, maxPropsPerObject);
+                if (extracted !== undefined) {
+                    result[key] = extracted;
+                    count++;
+                }
+            } else {
+                result[key] = value;
+                count++;
+            }
+        } catch (e) {
+            result[key] = `[Error: ${e.message}]`;
+            count++;
+        }
+    }
+
+    return result;
+};
+JSON.stringify(safeExtract(window))
+                 
             "#)){
                 Ok(window_result) => {
+                    // println!("window_result {:?}", window_result.display());
+                    let now = std::time::Instant::now();
                     let js_str = window_result.to_string(&mut context).unwrap();
                     let json_str = js_str.to_std_string_escaped();
+                    // let json_str = window_result.display().to_string();
+
                     let parsed_value: Value = serde_json::from_str(&json_str)?;
                     result.insert("window_result".to_string(), parsed_value);
+                    println!("window_result eval耗时: {:?}", now.elapsed());
+
                 }
                 Err(e) => {
             eprintln!("Script evaluation failed: {:?}", e);
@@ -192,31 +233,40 @@ pub fn run(html_str: &String) -> Result<Map<String, serde_json::Value>> {
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    #[test]
+    use std::fs;
+    use std::time::Instant;
+    use std::fs::File;
+    use std::io::prelude::*;
+    use serde_json::Value;
+    #[test] 
     fn test_run() {
-        let html_str = r#"
-        <script>
-            var a = 1;
-            var b = 2;
-            var c = a + b;
-            var d = {
-                "e": 3,
-                "f": 4
-            };
-            var g = [5, 6, 7];
-            var h = "hello world";
-            var i = null;
-            var j = undefined;
-            var k = function() {
-                console.log("hello");
-            };
-        </script>
+        let html_str = match fs::read_to_string(r"C:\Users\Admin\PycharmProjects\my_js_parser性能测试\youtube.html") {
+            Ok(data) => data,
+            Err(e) => {
+                eprintln!("❌ 读取文件失败: {}", e);
+                return;
+            }
+        };
+        // let result = run(&html_str);
 
-        "#.to_string();
-        let result = run(&html_str);
+        let start_time = Instant::now();
+   
+        // for _ in 1..=10 {
+        
+            let result = run(&html_str).unwrap();
+            
+    
+        // }
+        let end_time = Instant::now();
+        let duration = end_time - start_time;
+
+        // println!("结果 {:?}", result);
+        let file = File::create("result.json").unwrap(); // 创建或覆盖文件
+        serde_json::to_writer_pretty(file, &result).unwrap(); // 格式化写入 JSON
+        println!("10次执行耗时: {:?}", duration);
+ 
         // assert_eq!(result, 5);
-        println!("result {:?}", result);
+        // println!("result {:?}", result);
         
     }
 }

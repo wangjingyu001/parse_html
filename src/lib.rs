@@ -250,7 +250,7 @@ mod tests {
     use serde_json::Value;
     #[test] 
     fn test_run() {
-        let html_str = match fs::read_to_string(r"C:\Users\Admin\PycharmProjects\my_js_parser性能测试\youtube.html") {
+        let html_str = match fs::read_to_string(r"F:\rust_projects\parse_html\src\test.html") {
             Ok(data) => data,
             Err(e) => {
                 eprintln!("❌ 读取文件失败: {}", e);

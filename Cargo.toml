@@ -12,7 +12,7 @@ path = "src/lib.rs"
 
 
 [dependencies]
-boa_engine = "0.20.0"
+boa_engine = "0.19.0"
 scraper = "0.16"
 serde_json = "1.0.140"
 regex = "1.0"

@@ -6,11 +6,17 @@ use anyhow::Result;
 
 fn get_script_list(html_str: &String) -> Vec<String> {
     let html = Html::parse_document(html_str);
-    let script_selector = Selector::parse("script").unwrap();
-
-    html.select(&script_selector)
-        .map(|e| e.text().collect::<Vec<_>>().join(""))
-        .collect()
+    let script_selector = Selector::parse("script");
+    match script_selector {
+        Ok(selector) => {
+            html.select(&selector)
+                .map(|e| e.text().collect::<Vec<_>>().join(""))
+                .collect()
+        }
+        Err(_) => {
+            Vec::new()
+        }
+    }
 }
 
 fn deep_merge(result: &mut Map<String, Value>, item: Map<String, Value>) {
@@ -107,16 +113,18 @@ pub fn run(html_str: &String) -> Result<Map<String, serde_json::Value>> {
             let mut context = Context::default();
 
             match context.eval(Source::from_bytes(sandbox_script)){
-                Ok(_) => println!("✅ JS初始化成功"),
-                Err(e) => {
-                    eprintln!("❌ JS初始化失败");
+                Ok(_) => {
+                    // println!("✅ JS初始化成功")
+                },
+                Err(_) => {
+                    // eprintln!(   "❌ JS初始化失败");
                    
                 }   
             };
 
             for (index, script_text) in script_list.iter().enumerate() {
-                let now = std::time::Instant::now();
-                println!("执行第 {} 个 script", index);
+                // let now = std::time::Instant::now();
+                // println!("执行第 {} 个 script", index);
 
                 if let Ok(parsed_data) = serde_json::from_str::<Value>(script_text) {
                     if let Some(obj) = parsed_data.as_object() {
@@ -128,9 +136,11 @@ pub fn run(html_str: &String) -> Result<Map<String, serde_json::Value>> {
                 }
 
                 match context.eval(Source::from_bytes(script_text)) {
-                    Ok(_) => println!("✅ JS执行完成 index {} eval耗时: {:?}", index,now.elapsed()),
+                    Ok(_) => {
+                        // println!("✅ JS执行完成 index {} eval耗时: {:?}", index,now.elapsed());
+                    },
                     Err(e) => {
-                        eprintln!("❌ JS执行出错 index {}: {:?} eval耗时: {:?}", index, e, now.elapsed());
+                        // eprintln!("❌ JS执行出错 index {}: {:?} eval耗时: {:?}", index, e, now.elapsed());
                         let json_list = extract_all_json(script_text);
                         // println!("json_list {:?}", json_list);
                         for json_part in json_list {
@@ -193,18 +203,18 @@ JSON.stringify(safeExtract(window))
             "#)){
                 Ok(window_result) => {
                     // println!("window_result {:?}", window_result.display());
-                    let now = std::time::Instant::now();
+                    // let now = std::time::Instant::now();
                     let js_str = window_result.to_string(&mut context).unwrap();
                     let json_str = js_str.to_std_string_escaped();
                     // let json_str = window_result.display().to_string();
 
                     let parsed_value: Value = serde_json::from_str(&json_str)?;
                     result.insert("window_result".to_string(), parsed_value);
-                    println!("window_result eval耗时: {:?}", now.elapsed());
+                    // println!("window_result eval耗时: {:?}", now.elapsed());
 
                 }
-                Err(e) => {
-            eprintln!("Script evaluation failed: {:?}", e);
+                Err(_) => {
+            // eprintln!("Script evaluation failed: {:?}", e);
         }
             };
 

@@ -248,7 +248,7 @@ mod tests {
     use std::fs::File;
     use std::io::prelude::*;
     use serde_json::Value;
-    #[test] 
+    #[test]  
     fn test_run() {
         let html_str = match fs::read_to_string(r"F:\rust_projects\parse_html\src\test.html") {
             Ok(data) => data,

@@ -151,7 +151,7 @@ pub fn run(html_str: &String) -> Result<Map<String, serde_json::Value>> {
             }
 
             match context.eval(Source::from_bytes(r#"
-                function safeExtract(obj, visited = new WeakSet(), depth = 0, maxDepth = 3, maxPropsPerObject = 5000000) {
+                function safeExtract(obj, visited = new WeakSet(), depth = 0, maxDepth = 1000, maxPropsPerObject = 5000000) {
     if (obj === null || typeof obj !== 'object') return obj;
     if (visited.has(obj)) return;
     if (depth > maxDepth) return;
